@@ -1,0 +1,9 @@
+Package: indiseas
+Type: Package
+Title: Analysis of Indiseas' model-based indicators
+Version: 0.1
+Date: 2015-06-02
+Author: Indiseas working group
+Maintainer: Ricardo Oliveros-Ramos <ricardo.oliveros@gmail.com>
+Description: Indiseas
+License: GPL-2
