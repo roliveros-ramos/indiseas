@@ -9,6 +9,65 @@ calculateFacets.default = function(indicators, Fmult, smooth=TRUE, dF=0.01) {
   if(all(is.na(indicators))) {
     return(list(output=rep(NA, 11), input=input))
   }
+  
+  smoothInd = splinefun(x = Fmult, y=indicators)
+  
+  if(isTRUE(smooth)) {  
+    Fmult = seq(from=min(Fmult, na.rm=TRUE), to=max(Fmult, na.rm=TRUE), by=dF)
+    indicators = smoothInd(Fmult)
+  }
+  
+  #   indicators = (indicators - indicators[1])/sd(indicators, na.rm=TRUE)
+  
+  Dind = diff(indicators)/diff(Fmult)
+  
+  # Facets
+  # 1) degree of response
+  #--------------------------
+  # mean rate of change
+  mrc = mean(Dind, na.rm=TRUE)
+  # area under the curve
+  Fmids = seq(from=min(Fmult, na.rm=TRUE), to=max(Fmult, na.rm=TRUE), by=0.005)
+  yValue = smoothInd(0.5*(head(Fmult, -1) + tail(Fmult, -1)))
+  auc   = sum(abs(yValue)*diff(Fmids), na.rm=TRUE)
+  # 90% quantile of the derivatives
+  q90 = quantile(Dind, prob=0.9, na.rm=TRUE)
+  
+  # 2) shape of response
+  #--------------------------
+  
+  spearman = cor(Fmult, indicators, method = "spearman", use="complete")
+  pearson  = cor(Fmult, indicators, method = "pearson", use="complete")
+  kendall  = cor(Fmult, indicators, method = "kendall", use="complete")
+  
+  # absolute value of pearson correlation
+  avp = abs(pearson)
+  # absolute value Spearman correlation
+  avs = abs(spearman)
+  # absolute value of kendall's tau
+  avk = abs(kendall)
+  # absolute value of the sign of the derivative
+  avsd = abs(mean(sign(Dind), na.rm=TRUE))
+  # Maximum number of consecutive equal signs of the derivative 
+  # over the number of derivative 
+  running = rle(sign(Dind))
+  mnc = max(running$lengths)/length(Dind)
+  
+  output = c(mrc=mrc, auc=auc, q90=q90, avp=avp, avs=avs, avk=avk, avsd=avsd, 
+             mnc=mnc)
+  
+  
+  return(list(output=output, input=input))
+  
+}
+
+calculateFacets.old = function(indicators, Fmult, smooth=TRUE, dF=0.01) {
+  
+  input = list(indicators=indicators, Fmult=Fmult)
+  
+  if(all(is.na(indicators))) {
+    return(list(output=rep(NA, 11), input=input))
+  }
 
   smoothInd = splinefun(x = Fmult, y=indicators)
   
@@ -75,7 +134,7 @@ calculateFacets.default = function(indicators, Fmult, smooth=TRUE, dF=0.01) {
 
 calculateFacets.data.frame = function(indicator, Fmult, smooth=TRUE, dF=0.01) {
 
-  ind = c("ecosystem", "fishingStrategy", "value", "indicator") %in% names(indicator)
+  ind = c("ecosystem", "strategy", "value", "indicator") %in% names(indicator)
   if(!all(ind)) stop("data frame does not match sensitivity data frame variables.")
   
   indValue = apply(tapply(indicators$value, 
